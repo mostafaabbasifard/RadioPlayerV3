@@ -18,16 +18,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 import os
 import psutil
-import asyncio
 from time import time
-from config import Config
 from datetime import datetime
+from config import Config
+from pyrogram import Client, filters, emoji
 from pyrogram.types import Message
 from psutil._common import bytes2human
-from pyrogram import Client, filters, emoji
 
 START_TIME = datetime.utcnow()
 START_TIME_ISO = START_TIME.replace(microsecond=0).isoformat()
+
 TIME_DURATION_UNITS = (
     ('week', 60 * 60 * 24 * 7),
     ('day', 60 * 60 * 24),
@@ -41,7 +41,6 @@ self_or_contact_filter = filters.create(
     (message.from_user and message.from_user.is_contact) or message.outgoing
 )
 
-
 async def _human_time_duration(seconds):
     if seconds == 0:
         return 'inf'
@@ -49,91 +48,74 @@ async def _human_time_duration(seconds):
     for unit, div in TIME_DURATION_UNITS:
         amount, seconds = divmod(int(seconds), div)
         if amount > 0:
-            parts.append('{} {}{}'
-                         .format(amount, unit, "" if amount == 1 else "s"))
+            parts.append(f"{amount} {unit}{'s' if amount != 1 else ''}")
     return ', '.join(parts)
 
-
 async def generate_sysinfo(workdir):
-    # uptime
     info = {
-        'boot': (datetime.fromtimestamp(psutil.boot_time())
-                 .strftime("%Y-%m-%d %H:%M:%S"))
+        'boot': datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S")
     }
+
     # CPU
     cpu_freq = psutil.cpu_freq().current
-    if cpu_freq >= 1000:
-        cpu_freq = f"{round(cpu_freq / 1000, 2)}GHz"
-    else:
-        cpu_freq = f"{round(cpu_freq, 2)}MHz"
-    info['cpu'] = (
-        f"{psutil.cpu_percent(interval=1)}% "
-        f"({psutil.cpu_count()}) "
-        f"{cpu_freq}"
-    )
+    cpu_freq = f"{round(cpu_freq / 1000, 2)}GHz" if cpu_freq >= 1000 else f"{round(cpu_freq, 2)}MHz"
+    info['cpu'] = f"{psutil.cpu_percent(interval=1)}% ({psutil.cpu_count()}) {cpu_freq}"
+
     # Memory
     vm = psutil.virtual_memory()
     sm = psutil.swap_memory()
-    info['ram'] = (f"{bytes2human(vm.total)}, "
-                   f"{bytes2human(vm.available)} available")
+    info['ram'] = f"{bytes2human(vm.total)}, {bytes2human(vm.available)} available"
     info['swap'] = f"{bytes2human(sm.total)}, {sm.percent}%"
-    # Disks
+
+    # Disk
     du = psutil.disk_usage(workdir)
     dio = psutil.disk_io_counters()
-    info['disk'] = (f"{bytes2human(du.used)} / {bytes2human(du.total)} "
-                    f"({du.percent}%)")
+    info['disk'] = f"{bytes2human(du.used)} / {bytes2human(du.total)} ({du.percent}%)"
     if dio:
-        info['disk io'] = (f"R {bytes2human(dio.read_bytes)} | "
-                           f"W {bytes2human(dio.write_bytes)}")
+        info['disk io'] = f"R {bytes2human(dio.read_bytes)} | W {bytes2human(dio.write_bytes)}"
+
     # Network
     nio = psutil.net_io_counters()
-    info['net io'] = (f"TX {bytes2human(nio.bytes_sent)} | "
-                      f"RX {bytes2human(nio.bytes_recv)}")
-    # Sensors
-    sensors_temperatures = psutil.sensors_temperatures()
-    if sensors_temperatures:
-        temperatures_list = [
-            x.current
-            for x in sensors_temperatures['coretemp']
-        ]
-        temperatures = sum(temperatures_list) / len(temperatures_list)
-        info['temp'] = f"{temperatures}\u00b0C"
-    info = {f"{key}:": value for (key, value) in info.items()}
-    max_len = max(len(x) for x in info)
-    return ("```"
-            + "\n".join([f"{x:<{max_len}} {y}" for x, y in info.items()])
-            + "```")
+    info['net io'] = f"TX {bytes2human(nio.bytes_sent)} | RX {bytes2human(nio.bytes_recv)}"
 
+    # Temperature (if available)
+    try:
+        sensors = psutil.sensors_temperatures()
+        if sensors and 'coretemp' in sensors:
+            temps = [sensor.current for sensor in sensors['coretemp']]
+            info['temp'] = f"{sum(temps) / len(temps):.1f}°C"
+    except Exception:
+        pass
+
+    # Format output
+    info = {f"{key}:": value for key, value in info.items()}
+    max_len = max(len(k) for k in info)
+    return "```\n" + "\n".join(f"{k:<{max_len}} {v}" for k, v in info.items()) + "\n```"
 
 
 @Client.on_message(
-    filters.command("ping", prefixes=".")
-    & (filters.group | filters.private)
-    & self_or_contact_filter
-    & ~filters.edited
-    & ~filters.bot
-    & ~filters.via_bot
-    )
+    filters.command("ping", prefixes=".") &
+    (filters.group | filters.private) &
+    self_or_contact_filter &
+    ~filters.bot &
+    ~filters.via_bot
+)
 async def ping_pong(_, m: Message):
     start = time()
     m_reply = await m.reply_text("Pong!")
     delta_ping = time() - start
-    await m_reply.edit_text(
-        f"{emoji.ROBOT} **Ping** : `{delta_ping * 1000:.3f} ms`"
-    )
+    await m_reply.edit_text(f"{emoji.ROBOT} **Ping** : `{delta_ping * 1000:.3f} ms`")
 
 
 @Client.on_message(
-    filters.command("uptime", prefixes=".")
-    & (filters.group | filters.private)
-    & self_or_contact_filter
-    & ~filters.edited
-    & ~filters.bot
-    & ~filters.via_bot
-    )
+    filters.command("uptime", prefixes=".") &
+    (filters.group | filters.private) &
+    self_or_contact_filter &
+    ~filters.bot &
+    ~filters.via_bot
+)
 async def get_uptime(_, m: Message):
-    current_time = datetime.utcnow()
-    uptime_sec = (current_time - START_TIME).total_seconds()
+    uptime_sec = (datetime.utcnow() - START_TIME).total_seconds()
     uptime = await _human_time_duration(int(uptime_sec))
     await m.reply_text(
         f"{emoji.ROBOT} **Radio Player V3.0**\n"
@@ -143,16 +125,16 @@ async def get_uptime(_, m: Message):
 
 
 @Client.on_message(
-    filters.command("sysinfo", prefixes=".")
-    & (filters.group | filters.private)
-    & self_or_contact_filter
-    & ~filters.edited
-    & ~filters.bot
-    & ~filters.via_bot
-    )
+    filters.command("sysinfo", prefixes=".") &
+    (filters.group | filters.private) &
+    self_or_contact_filter &
+    ~filters.bot &
+    ~filters.via_bot
+)
 async def get_sysinfo(client, m: Message):
     response = "**System Information**:\n"
     m_reply = await m.reply_text(f"{response}`...`")
     response += await generate_sysinfo(client.workdir)
     await m_reply.edit_text(response)
+
 
