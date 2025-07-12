@@ -269,7 +269,7 @@ class MusicPlayer(object):
                 await group_call.start(CHAT_ID)
         except GroupCallNotFoundError:
             try:
-                await USER.send(CreateGroupCall(
+                await USER(CreateGroupCall(
                     peer=(await USER.resolve_peer(CHAT_ID)),
                     random_id=randint(10000, 999999999)
                     )
@@ -292,7 +292,7 @@ class MusicPlayer(object):
         call = InputGroupCall(id=self.group_call.group_call.id, access_hash=self.group_call.group_call.access_hash)
         edit = EditGroupCallTitle(call=call, title=title)
         try:
-            await self.group_call.client.send(edit)
+            await USER(edit)
         except Exception as e:
             print("Error Occured On Changing VC Title:", e)
             pass
