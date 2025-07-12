@@ -37,4 +37,3 @@ else:
         api_hash=Config.API_HASH
     )
 
-USER.start()
