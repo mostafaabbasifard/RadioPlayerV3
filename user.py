@@ -19,19 +19,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 from config import Config
 from pyrogram import Client
 
-REPLY_MESSAGE=Config.REPLY_MESSAGE
+REPLY_MESSAGE = Config.REPLY_MESSAGE
 
 if REPLY_MESSAGE is not None:
     USER = Client(
-        Config.SESSION,
-        Config.API_ID,
-        Config.API_HASH,
+        name="userbot",
+        session_string=Config.SESSION,
+        api_id=Config.API_ID,
+        api_hash=Config.API_HASH,
         plugins=dict(root="plugins.userbot")
-        )
+    )
 else:
     USER = Client(
-        Config.SESSION,
-        Config.API_ID,
-        Config.API_HASH
-        )
+        name="userbot",
+        session_string=Config.SESSION,
+        api_id=Config.API_ID,
+        api_hash=Config.API_HASH
+    )
+
 USER.start()
