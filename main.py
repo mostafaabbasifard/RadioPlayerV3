@@ -46,6 +46,7 @@ bot = Client(
 if not os.path.isdir("./downloads"):
     os.makedirs("./downloads")
 async def main():
+    await USER.start()
     async for _ in USER.get_dialogs(): pass  # warm-up to fix PEER_ID_INVALID
     async with bot:
         await mp.start_radio()
