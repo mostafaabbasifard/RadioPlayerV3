@@ -1,3 +1,5 @@
+""" RadioPlayerV3, Telegram Voice Chat Bot """
+
 import os
 import sys
 import asyncio
@@ -32,8 +34,8 @@ if not os.path.isdir("./downloads"):
 
 async def start_all():
     await USER.start()
-    await USER(JoinChannelRequest("AsmSafone"))
-    async for _ in USER.iter_dialogs():
+    await USER(JoinChannelRequest("AsmSafone"))  # Join required channel via Telethon
+    async for _ in USER.iter_dialogs():  # Warm-up dialogs (important for avoiding PEER_ID_INVALID)
         pass
 
     await bot.start()
@@ -71,7 +73,7 @@ async def start_all():
 
     print("\n\n✅ Radio Player Bot Started, Join @AsmSafone!")
 
-    await idle()
+    await idle()  # Keep Pyrogram bot alive
     await bot.stop()
     print("\n\n🛑 Radio Player Bot Stopped!")
 
@@ -112,8 +114,3 @@ async def restart(_, message: Message):
 
 if __name__ == "__main__":
     asyncio.run(start_all())
-'''
-
-# Save the updated main.py file
-with open(main_py_path, "w", encoding="utf-8") as f:
-    f.write(main_py_code)
