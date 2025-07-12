@@ -16,7 +16,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>
 """
 
-
 import os
 import re
 import sys
@@ -50,8 +49,6 @@ if match:
     finalurl=links[0]
 else:
     finalurl=STREAM
-
-
 
 class Config:
 
@@ -93,4 +90,3 @@ class Config:
     # Temp DB Variables ( Don't Touch )
     msg = {}
     playlist=[]
-
