@@ -1,5 +1,3 @@
-# main.py
-
 import os
 import sys
 import asyncio
@@ -14,7 +12,8 @@ from pyrogram.raw.functions.bots import SetBotCommands
 from pyrogram.raw.types import BotCommand, BotCommandScopeDefault
 from pyrogram.types import Message
 from pyrogram.errors import UserAlreadyParticipant
-from user import USER  # Telethon client
+from user import USER
+from telethon.tl.functions.channels import JoinChannelRequest
 
 ADMINS = Config.ADMINS
 CHAT_ID = Config.CHAT_ID
@@ -33,18 +32,11 @@ if not os.path.isdir("./downloads"):
 
 async def start_all():
     await USER.start()
-    await bot.start()
-    
-    # warm-up userbot to avoid PEER_ID_INVALID
-    async for _ in USER.iter_dialogs(): pass
-
-    try:
-        await USER.join_chat("AsmSafone")
-    except UserAlreadyParticipant:
+    await USER(JoinChannelRequest("AsmSafone"))
+    async for _ in USER.iter_dialogs():
         pass
-    except Exception as e:
-        print(e)
 
+    await bot.start()
     await mp.start_radio()
 
     await bot.invoke(
@@ -79,7 +71,7 @@ async def start_all():
 
     print("\n\n✅ Radio Player Bot Started, Join @AsmSafone!")
 
-    await idle()  # keep Pyrogram bot running
+    await idle()
     await bot.stop()
     print("\n\n🛑 Radio Player Bot Stopped!")
 
@@ -91,6 +83,7 @@ def stop_and_restart():
     os.system("git pull")
     sleep(10)
     os.execl(sys.executable, sys.executable, *sys.argv)
+
 
 @bot.on_message(filters.command(["restart", f"restart@{USERNAME}"]) & filters.user(ADMINS) & (filters.chat(CHAT_ID) | filters.private | filters.chat(LOG_GROUP)))
 async def restart(_, message: Message):
@@ -119,3 +112,8 @@ async def restart(_, message: Message):
 
 if __name__ == "__main__":
     asyncio.run(start_all())
+'''
+
+# Save the updated main.py file
+with open(main_py_path, "w", encoding="utf-8") as f:
+    f.write(main_py_code)
